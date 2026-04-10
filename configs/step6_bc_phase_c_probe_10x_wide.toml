@@ -1,0 +1,143 @@
+# Phase C probe: 10x-wide model (512ch/48b/hd2048/bn64) — 83.4M params
+# Width-focused alternative to the 10x depth variant.
+# Max bs=3072 per GPU on A100-40GB (35.3 GiB peak, tight).
+# grad_accum_steps=2 + bs=3072 → effective global batch = 12,288 (smaller than baseline).
+# Alternative: bs=2048, grad_accum_steps=4 → eff batch = 16,384 (safer).
+
+[resnet]
+conv_channels = 512
+num_blocks = 48
+bottleneck_channels = 64
+hidden_dim = 2048
+
+[bc.control]
+version = 4
+device = 'cuda'
+seed = 60329
+grad_accum_steps = 4
+max_runtime_seconds = 43200
+enable_cudnn_benchmark = true
+enable_amp = true
+amp_dtype = 'bfloat16'
+enable_tf32 = true
+enable_compile = false
+freeze_bn = false
+tensorboard_dir = '/home/drixs2050/Documents/Mortal/artifacts/tensorboard/step6_bc_phase_c_probe_10x_wide'
+state_file = '/home/drixs2050/Documents/Mortal/artifacts/checkpoints/step6_bc_phase_c_probe_10x_wide_state.pth'
+best_state_file = '/home/drixs2050/Documents/Mortal/artifacts/checkpoints/step6_bc_phase_c_probe_10x_wide_best.pth'
+batch_size = 2048
+train_log_every = 50
+save_every = 200
+val_steps = 8
+max_steps = 19247
+top_k = 3
+val_batch_size = 16384
+best_eval_split = 'val'
+best_eval_every = 800
+best_eval_batch_size = 16384
+best_eval_max_batches = 16
+eval_batch_size = 16384
+eval_max_batches = 32
+
+[bc.dataset]
+root_dir = '/home/drixs2050/Documents/Mortal'
+train_list = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_4y_full_e01_e16_v0/phoenix_hanchan_8dan_actor_any/train.txt'
+val_list = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_4y_full_e01_e16_v0/phoenix_hanchan_8dan_actor_any/val.txt'
+test_list = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_4y_full_e01_e16_v0/phoenix_hanchan_8dan_actor_any/test.txt'
+path_cache = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_4y_full_e01_e16_v0/phoenix_hanchan_8dan_actor_any/path_cache_v1.pth'
+actor_filter_index = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_4y_full_e01_e16_v0/phoenix_hanchan_8dan_actor_any/actor_filter_min17.pth'
+step_count_summary = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_4y_full_e01_e16_v0/phoenix_hanchan_8dan_actor_any/step_counts_v1.json'
+actor_filter_manifest = '/home/drixs2050/Documents/Mortal/data/manifests/normalized/v1/tenhou_phoenix_4y_full_e01_e16_v0.jsonl'
+min_actor_dan = 17
+train_globs = []
+val_globs = []
+test_globs = []
+file_index = '/home/drixs2050/Documents/Mortal/artifacts/tmp/step6_bc_phase_c_probe_10x_wide_file_index.pth'
+file_batch_size = 48
+num_workers = 4
+persistent_workers = true
+prefetch_factor = 2
+multiprocessing_context = 'spawn'
+pin_memory = true
+cpu_batch_pipe_backend = 'thread'
+cpu_ready_batches = 4
+device_prefetch_batches = 2
+num_epochs = 1
+enable_augmentation = false
+augmented_first = false
+oracle = false
+trust_seed = false
+always_include_kan_select = true
+player_names_files = []
+exclude_names_files = []
+
+[bc.optim]
+lr = 1e-4
+eps = 1e-8
+betas = [0.9, 0.999]
+weight_decay = 0.1
+max_grad_norm = 0.0
+enable_fused_optimizer = true
+
+[bc.optim.scheduler]
+peak = 4e-4
+final = 4e-5
+warm_up_ratio = 0.05
+max_steps = 0
+init = 1e-6
+
+[bc.distributed]
+backend = 'nccl'
+broadcast_buffers = false
+find_unused_parameters = false
+gradient_as_bucket_view = true
+static_graph = false
+
+[bc.launch]
+nproc_per_node = 2
+master_port = 29524
+eval_device = 'cuda:0'
+final_val_json = '/home/drixs2050/Documents/Mortal/artifacts/reports/step6_bc_phase_c_probe_10x_wide_val.json'
+final_test_json = '/home/drixs2050/Documents/Mortal/artifacts/reports/step6_bc_phase_c_probe_10x_wide_test.json'
+campaign_summary_json = '/home/drixs2050/Documents/Mortal/artifacts/reports/step6_bc_phase_c_probe_10x_wide_campaign.json'
+
+[bc.stage]
+enabled = false
+
+[bc.runtime_cache]
+enabled = false
+
+[bc.preflight]
+enabled = true
+min_runtime_seconds = 240
+min_steps_before_stop = 200
+required_stable_windows = 2
+stability_tolerance = 0.05
+summary_json = '/home/drixs2050/Documents/Mortal/artifacts/reports/step6_bc_phase_c_probe_10x_wide_summary.json'
+gpu_sample_interval_seconds = 2.0
+min_samples_per_second = 800
+preferred_samples_per_second = 2000
+max_loader_wait_fraction = 0.25
+min_steady_gpu_watts = 150
+min_steady_gpu_utilization = 50
+min_steady_gpu_ratio = 0.60
+max_combined_train_worker_rss_gib = 192
+max_single_train_worker_rss_gib = 112
+disable_wandb = true
+
+[bc.wandb]
+enabled = true
+project = 'mortal-step6-bc'
+entity = 'drixs2050'
+name = 'step6_bc_phase_c_probe_10x_wide'
+group = 'step6_bc_phase_c'
+job_type = 'train'
+eval_job_type = 'eval'
+tags = ['step6', 'bc', 'phase-c', 'probe', '10x', 'wide', 'full8dan', 'ddp']
+notes = 'Phase C: 512ch/48b/bn64/hd2048, 83.4M params (7.7x baseline). Width-focused.'
+dir = '/home/drixs2050/Documents/Mortal/artifacts/wandb'
+mode = 'online'
+resume = 'allow'
+run_id = ''
+log_config = true
+log_eval_runs = true

@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader, IterableDataset
 from torch.utils.tensorboard import SummaryWriter
 from model import GRP
 from libriichi.dataset import Grp
-from common import tqdm
+from common import load_path_list, tqdm
 from config import config
 
 class GrpFileDatasetsIter(IterableDataset):
@@ -72,11 +72,10 @@ def collate(batch):
         rank_by_players.append(rank_by_player)
 
     lengths = torch.tensor(lengths)
-    rank_by_players = torch.tensor(rank_by_players, dtype=torch.int64, pin_memory=True)
+    rank_by_players = torch.tensor(rank_by_players, dtype=torch.int64)
 
     padded = pad_sequence(inputs, batch_first=True)
     packed_inputs = pack_padded_sequence(padded, lengths, batch_first=True, enforce_sorted=False)
-    packed_inputs.pin_memory()
 
     return packed_inputs, rank_by_players
 
@@ -87,6 +86,8 @@ def train():
     val_steps = cfg['control']['val_steps']
 
     device = torch.device(cfg['control']['device'])
+    num_workers = cfg['dataset'].get('num_workers', 0)
+    pin_memory = cfg['dataset'].get('pin_memory', device.type == 'cuda')
     torch.backends.cudnn.benchmark = cfg['control']['enable_cudnn_benchmark']
     if device.type == 'cuda':
         logging.info(f'device: {device} ({torch.cuda.get_device_name(device)})')
@@ -113,21 +114,32 @@ def train():
     file_index = cfg['dataset']['file_index']
     train_globs = cfg['dataset']['train_globs']
     val_globs = cfg['dataset']['val_globs']
-    if path.exists(file_index):
-        index = torch.load(file_index, weights_only=True)
-        train_file_list = index['train_file_list']
-        val_file_list = index['val_file_list']
+    root_dir = cfg['dataset'].get('root_dir', '')
+    train_list = cfg['dataset'].get('train_list', '')
+    val_list = cfg['dataset'].get('val_list', '')
+    if train_list or val_list:
+        if not train_list or not val_list:
+            raise ValueError('grp.dataset.train_list and grp.dataset.val_list must be set together')
+        train_file_list = load_path_list(train_list, root_dir)
+        val_file_list = load_path_list(val_list, root_dir)
+        logging.info(f'loaded train list from {train_list}')
+        logging.info(f'loaded val list from {val_list}')
     else:
-        logging.info('building file index...')
-        train_file_list = []
-        val_file_list = []
-        for pat in train_globs:
-            train_file_list.extend(glob(pat, recursive=True))
-        for pat in val_globs:
-            val_file_list.extend(glob(pat, recursive=True))
-        train_file_list.sort(reverse=True)
-        val_file_list.sort(reverse=True)
-        torch.save({'train_file_list': train_file_list, 'val_file_list': val_file_list}, file_index)
+        if path.exists(file_index):
+            index = torch.load(file_index, weights_only=True)
+            train_file_list = index['train_file_list']
+            val_file_list = index['val_file_list']
+        else:
+            logging.info('building file index...')
+            train_file_list = []
+            val_file_list = []
+            for pat in train_globs:
+                train_file_list.extend(glob(pat, recursive=True))
+            for pat in val_globs:
+                val_file_list.extend(glob(pat, recursive=True))
+            train_file_list.sort(reverse=True)
+            val_file_list.sort(reverse=True)
+            torch.save({'train_file_list': train_file_list, 'val_file_list': val_file_list}, file_index)
     writer = SummaryWriter(cfg['control']['tensorboard_dir'])
 
     train_file_data = GrpFileDatasetsIter(
@@ -139,7 +151,8 @@ def train():
         dataset = train_file_data,
         batch_size = batch_size,
         drop_last = True,
-        num_workers = 1,
+        num_workers = num_workers,
+        pin_memory = pin_memory,
         collate_fn = collate,
     ))
 
@@ -152,7 +165,8 @@ def train():
         dataset = val_file_data,
         batch_size = batch_size,
         drop_last = True,
-        num_workers = 1,
+        num_workers = num_workers,
+        pin_memory = pin_memory,
         collate_fn = collate,
     ))
 

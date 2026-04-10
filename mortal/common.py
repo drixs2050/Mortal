@@ -1,8 +1,10 @@
+import os
 import torch
 import socket
 import struct
 import time
 from typing import *
+from os import path
 from io import BytesIO
 from functools import partial
 from tqdm.auto import tqdm as orig_tqdm
@@ -15,6 +17,17 @@ def parameter_count(module):
 
 def filtered_trimmed_lines(lines):
     return filter(lambda l: l, map(lambda l: l.strip(), lines))
+
+def load_path_list(filename, root_dir=''):
+    with open(filename, encoding='utf-8') as f:
+        ret = list(filtered_trimmed_lines(f))
+    if root_dir:
+        root_dir = os.fspath(root_dir)
+        ret = [
+            p if path.isabs(p) else path.join(root_dir, p)
+            for p in ret
+        ]
+    return ret
 
 def iter_grads(parameters, take=False):
     for p in parameters:

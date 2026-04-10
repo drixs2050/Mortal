@@ -19,7 +19,7 @@ def train():
     from torch.nn.utils import clip_grad_norm_
     from torch.utils.data import DataLoader
     from torch.utils.tensorboard import SummaryWriter
-    from common import submit_param, parameter_count, drain, filtered_trimmed_lines, tqdm
+    from common import submit_param, parameter_count, drain, filtered_trimmed_lines, load_path_list, tqdm
     from player import TestPlayer
     from dataloader import FileDatasetsIter, worker_init_fn
     from lr_scheduler import LinearWarmUpCosineAnnealingLR
@@ -51,6 +51,9 @@ def train():
     file_batch_size = config['dataset']['file_batch_size']
     reserve_ratio = config['dataset']['reserve_ratio']
     num_workers = config['dataset']['num_workers']
+    pin_memory = config['dataset'].get('pin_memory', device.type == 'cuda')
+    root_dir = config['dataset'].get('root_dir', '')
+    file_list_path = config['dataset'].get('file_list', '')
     num_epochs = config['dataset']['num_epochs']
     enable_augmentation = config['dataset']['enable_augmentation']
     augmented_first = config['dataset']['augmented_first']
@@ -60,8 +63,8 @@ def train():
     max_grad_norm = config['optim']['max_grad_norm']
 
     mortal = Brain(version=version, **config['resnet']).to(device)
-    dqn = DQN(version=version).to(device)
-    aux_net = AuxNet((4,)).to(device)
+    dqn = DQN(version=version, hidden_dim=mortal.hidden_dim).to(device)
+    aux_net = AuxNet((4,), hidden_dim=mortal.hidden_dim).to(device)
     all_models = (mortal, dqn, aux_net)
     if enable_compile:
         for m in all_models:
@@ -157,25 +160,29 @@ def train():
             player_names = list(player_names_set)
             logging.info(f'loaded {len(player_names):,} players')
 
-            file_index = config['dataset']['file_index']
-            if path.exists(file_index):
-                index = torch.load(file_index, weights_only=True)
-                file_list = index['file_list']
+            if file_list_path:
+                file_list = load_path_list(file_list_path, root_dir)
+                logging.info(f'loaded file list from {file_list_path}')
             else:
-                logging.info('building file index...')
-                file_list = []
-                for pat in config['dataset']['globs']:
-                    file_list.extend(glob(pat, recursive=True))
-                if len(player_names_set) > 0:
-                    filtered = []
-                    for filename in tqdm(file_list, unit='file'):
-                        with gzip.open(filename, 'rt') as f:
-                            start = json.loads(next(f))
-                            if not set(start['names']).isdisjoint(player_names_set):
-                                filtered.append(filename)
-                    file_list = filtered
-                file_list.sort(reverse=True)
-                torch.save({'file_list': file_list}, file_index)
+                file_index = config['dataset']['file_index']
+                if path.exists(file_index):
+                    index = torch.load(file_index, weights_only=True)
+                    file_list = index['file_list']
+                else:
+                    logging.info('building file index...')
+                    file_list = []
+                    for pat in config['dataset']['globs']:
+                        file_list.extend(glob(pat, recursive=True))
+                    if len(player_names_set) > 0:
+                        filtered = []
+                        for filename in tqdm(file_list, unit='file'):
+                            with gzip.open(filename, 'rt') as f:
+                                start = json.loads(next(f))
+                                if not set(start['names']).isdisjoint(player_names_set):
+                                    filtered.append(filename)
+                        file_list = filtered
+                    file_list.sort(reverse=True)
+                    torch.save({'file_list': file_list}, file_index)
         logging.info(f'file list size: {len(file_list):,}')
 
         before_next_test_play = (test_every - steps % test_every) % test_every
@@ -199,7 +206,7 @@ def train():
             batch_size = batch_size,
             drop_last = False,
             num_workers = num_workers,
-            pin_memory = True,
+            pin_memory = pin_memory,
             worker_init_fn = worker_init_fn,
         ))
 

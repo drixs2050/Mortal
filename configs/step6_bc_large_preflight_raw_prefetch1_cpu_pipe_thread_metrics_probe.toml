@@ -1,0 +1,161 @@
+# Step 6 raw-loader baseline with the per-rank threaded CPU batch pipe and
+# fresh handoff metrics enabled in train_bc.py.
+
+[resnet]
+conv_channels = 192
+num_blocks = 40
+
+[bc.control]
+version = 4
+device = 'cuda'
+seed = 60329
+grad_accum_steps = 1
+max_runtime_seconds = 720
+enable_cudnn_benchmark = true
+enable_amp = true
+amp_dtype = 'bfloat16'
+enable_tf32 = true
+enable_compile = false
+freeze_bn = false
+tensorboard_dir = '/home/drixs2050/Documents/Mortal/artifacts/tensorboard/step6_bc_large_preflight_raw_prefetch1_cpu_pipe_thread_metrics_probe'
+state_file = '/home/drixs2050/Documents/Mortal/artifacts/checkpoints/step6_bc_large_preflight_raw_prefetch1_cpu_pipe_thread_metrics_probe_state.pth'
+best_state_file = '/home/drixs2050/Documents/Mortal/artifacts/checkpoints/step6_bc_large_preflight_raw_prefetch1_cpu_pipe_thread_metrics_probe_best.pth'
+batch_size = 8192
+train_log_every = 25
+save_every = 200
+val_steps = 0
+max_steps = 19247
+top_k = 3
+val_batch_size = 16384
+best_eval_split = 'val'
+best_eval_every = 0
+best_eval_batch_size = 16384
+best_eval_max_batches = 0
+eval_batch_size = 16384
+eval_max_batches = 0
+metrics_jsonl = '/home/drixs2050/Documents/Mortal/artifacts/reports/step6_bc_large_preflight_raw_prefetch1_cpu_pipe_thread_metrics_probe_metrics.jsonl'
+
+[bc.dataset]
+root_dir = '/home/drixs2050/Documents/Mortal'
+train_list = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_4y_full_e01_e16_v0/phoenix_hanchan_8dan_actor_any/train.txt'
+val_list = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_4y_full_e01_e16_v0/phoenix_hanchan_8dan_actor_any/val.txt'
+test_list = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_4y_full_e01_e16_v0/phoenix_hanchan_8dan_actor_any/test.txt'
+path_cache = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_4y_full_e01_e16_v0/phoenix_hanchan_8dan_actor_any/path_cache_v1.pth'
+actor_filter_index = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_4y_full_e01_e16_v0/phoenix_hanchan_8dan_actor_any/actor_filter_min17.pth'
+step_count_summary = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_4y_full_e01_e16_v0/phoenix_hanchan_8dan_actor_any/step_counts_v1.json'
+actor_filter_manifest = '/home/drixs2050/Documents/Mortal/data/manifests/normalized/v1/tenhou_phoenix_4y_full_e01_e16_v0.jsonl'
+min_actor_dan = 17
+train_globs = []
+val_globs = []
+test_globs = []
+file_index = '/home/drixs2050/Documents/Mortal/artifacts/tmp/step6_bc_large_preflight_raw_prefetch1_cpu_pipe_thread_metrics_probe_file_index.pth'
+file_batch_size = 48
+num_workers = 0
+eval_num_workers = 0
+prefetch_chunks = 1
+eval_prefetch_chunks = 1
+prefetch_strategy = 'static_chunks'
+prefetch_ram_budget_gib = 0
+eval_prefetch_ram_budget_gib = 0
+prefetch_target_chunk_gib = 0
+prefetch_low_watermark = 0.35
+prefetch_high_watermark = 0.85
+prefetch_threads = 1
+prebatched = false
+prefetch_startup_file_batch_size = 0
+prefetch_out_of_order = false
+device_prefetch_batches = 2
+device_prefetch_startup_batches = 1
+eval_prefetch_startup_file_batch_size = 0
+eval_prefetch_out_of_order = false
+eval_device_prefetch_batches = 1
+eval_device_prefetch_startup_batches = 1
+eval_pin_memory = false
+cpu_batch_pipe_backend = 'thread'
+cpu_ready_batches = 4
+cpu_pipe_poll_timeout_seconds = 0.1
+handoff_pin_memory = false
+eval_handoff_pin_memory = false
+handoff_stage_backend = 'inline'
+handoff_ring_slots = 2
+handoff_measure_copy_wait_sync = false
+handoff_log_host_mem = true
+multiprocessing_context = 'spawn'
+pin_memory = true
+num_epochs = 1
+enable_augmentation = false
+augmented_first = false
+oracle = false
+trust_seed = false
+always_include_kan_select = true
+player_names_files = []
+exclude_names_files = []
+
+[bc.optim]
+lr = 1e-4
+eps = 1e-8
+betas = [0.9, 0.999]
+weight_decay = 0.1
+max_grad_norm = 0.0
+enable_fused_optimizer = true
+
+[bc.optim.scheduler]
+peak = 4e-4
+final = 4e-5
+warm_up_ratio = 0.05
+max_steps = 0
+init = 1e-6
+
+[bc.distributed]
+backend = 'nccl'
+broadcast_buffers = false
+find_unused_parameters = false
+gradient_as_bucket_view = true
+static_graph = false
+
+[bc.launch]
+nproc_per_node = 2
+master_port = 29541
+eval_device = 'cuda:0'
+final_val_json = '/home/drixs2050/Documents/Mortal/artifacts/reports/step6_bc_large_preflight_raw_prefetch1_cpu_pipe_thread_metrics_probe_val.json'
+final_test_json = '/home/drixs2050/Documents/Mortal/artifacts/reports/step6_bc_large_preflight_raw_prefetch1_cpu_pipe_thread_metrics_probe_test.json'
+campaign_summary_json = '/home/drixs2050/Documents/Mortal/artifacts/reports/step6_bc_large_preflight_raw_prefetch1_cpu_pipe_thread_metrics_probe_campaign.json'
+
+[bc.stage]
+enabled = false
+
+[bc.runtime_cache]
+enabled = false
+
+[bc.preflight]
+enabled = true
+min_runtime_seconds = 240
+required_stable_windows = 2
+stability_tolerance = 0.05
+summary_json = '/home/drixs2050/Documents/Mortal/artifacts/reports/step6_bc_large_preflight_raw_prefetch1_cpu_pipe_thread_metrics_probe_summary.json'
+gpu_sample_interval_seconds = 2.0
+min_samples_per_second = 5900
+preferred_samples_per_second = 7000
+max_loader_wait_fraction = 0.15
+min_steady_gpu_watts = 150
+min_steady_gpu_utilization = 60
+min_steady_gpu_ratio = 0.70
+max_combined_train_worker_rss_gib = 192
+max_single_train_worker_rss_gib = 112
+
+[bc.wandb]
+enabled = true
+project = 'mortal-step6-bc'
+entity = 'drixs2050'
+name = 'step6_bc_large_preflight_raw_prefetch1_cpu_pipe_thread_metrics_probe'
+group = 'step6_bc'
+job_type = 'train'
+eval_job_type = 'eval'
+tags = ['step6', 'bc', 'large', 'preflight', 'full8dan', 'ddp', 'raw-path', 'prefetch1', 'cpu-pipe-thread', 'handoff-metrics']
+notes = ''
+dir = '/home/drixs2050/Documents/Mortal/artifacts/wandb'
+mode = 'online'
+resume = 'allow'
+run_id = ''
+log_config = true
+log_eval_runs = true

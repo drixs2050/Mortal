@@ -1,0 +1,163 @@
+# Step 1 secondary-card probe profile.
+# This is only for validating the second A100 by itself.
+# It must not replace the default single-card bring-up profile on cuda:0.
+
+[control]
+version = 4
+online = false
+
+state_file = '/home/drixs2050/Documents/Mortal/artifacts/checkpoints/step1_main.pth'
+best_state_file = '/home/drixs2050/Documents/Mortal/artifacts/checkpoints/step1_best.pth'
+tensorboard_dir = '/home/drixs2050/Documents/Mortal/artifacts/tensorboard/offline_smoke_cuda1'
+
+device = 'cuda:1'
+enable_cudnn_benchmark = false
+enable_amp = false
+enable_compile = false
+
+batch_size = 8
+opt_step_every = 1
+
+save_every = 4
+test_every = 8
+submit_every = 4
+
+[train_play.default]
+games = 8
+log_dir = '/home/drixs2050/Documents/Mortal/artifacts/train_play_logs_cuda1'
+boltzmann_epsilon = 0.05
+boltzmann_temp = 0.5
+top_p = 1.0
+repeats = 1
+
+[test_play]
+games = 8
+log_dir = '/home/drixs2050/Documents/Mortal/artifacts/test_play_logs_cuda1'
+
+[dataset]
+globs = ['/home/drixs2050/Documents/Mortal/artifacts/fixtures/logs/**/*.json.gz']
+file_index = '/home/drixs2050/Documents/Mortal/artifacts/tmp/step1_dataset_index_cuda1.pth'
+file_batch_size = 2
+reserve_ratio = 0.0
+num_workers = 0
+pin_memory = false
+player_names_files = []
+num_epochs = 1
+enable_augmentation = false
+augmented_first = false
+
+[env]
+gamma = 1.0
+pts = [6.0, 4.0, 2.0, 0.0]
+
+[resnet]
+conv_channels = 64
+num_blocks = 4
+
+[cql]
+min_q_weight = 1.0
+
+[aux]
+next_rank_weight = 0.2
+
+[freeze_bn]
+mortal = false
+
+[optim]
+eps = 1e-8
+betas = [0.9, 0.999]
+weight_decay = 0.01
+max_grad_norm = 0.0
+
+[optim.scheduler]
+peak = 5e-5
+final = 1e-5
+warm_up_steps = 0
+max_steps = 64
+
+[baseline.train]
+device = 'cuda:1'
+enable_compile = false
+state_file = '/home/drixs2050/Documents/Mortal/artifacts/checkpoints/step1_baseline.pth'
+
+[baseline.test]
+device = 'cuda:1'
+enable_compile = false
+state_file = '/home/drixs2050/Documents/Mortal/artifacts/checkpoints/step1_baseline.pth'
+
+[online]
+history_window = 8
+enable_compile = false
+
+[online.remote]
+host = '127.0.0.1'
+port = 5000
+
+[online.server]
+buffer_dir = '/home/drixs2050/Documents/Mortal/artifacts/online_buffer_cuda1'
+drain_dir = '/home/drixs2050/Documents/Mortal/artifacts/online_drain_cuda1'
+sample_reuse_rate = 0
+sample_reuse_threshold = 0
+capacity = 16
+force_sequential = false
+
+[1v3]
+seed_key = 81985529216486895
+games_per_iter = 4
+iters = 1
+log_dir = '/home/drixs2050/Documents/Mortal/artifacts/eval_logs/one_vs_three_cuda1'
+
+[1v3.challenger]
+device = 'cuda:1'
+name = 'step1-challenger-cuda1'
+state_file = '/home/drixs2050/Documents/Mortal/artifacts/checkpoints/step1_main.pth'
+stochastic_latent = false
+enable_compile = false
+enable_amp = true
+enable_rule_based_agari_guard = true
+
+[1v3.champion]
+device = 'cuda:1'
+name = 'step1-baseline-cuda1'
+state_file = '/home/drixs2050/Documents/Mortal/artifacts/checkpoints/step1_baseline.pth'
+stochastic_latent = false
+enable_compile = false
+enable_amp = true
+enable_rule_based_agari_guard = true
+
+[1v3.akochan]
+enabled = false
+dir = '/home/drixs2050/Documents/Mortal/artifacts/tmp/akochan_cuda1'
+tactics = '/home/drixs2050/Documents/Mortal/artifacts/tmp/akochan_tactics_cuda1.json'
+
+[grp]
+state_file = '/home/drixs2050/Documents/Mortal/artifacts/checkpoints/step1_grp.pth'
+
+[grp.network]
+hidden_size = 32
+num_layers = 2
+
+[grp.control]
+device = 'cuda:1'
+enable_cudnn_benchmark = false
+tensorboard_dir = '/home/drixs2050/Documents/Mortal/artifacts/tensorboard/grp_smoke_cuda1'
+
+batch_size = 8
+save_every = 4
+val_steps = 2
+
+[grp.dataset]
+train_globs = ['/home/drixs2050/Documents/Mortal/artifacts/fixtures/logs/**/*.json.gz']
+val_globs = ['/home/drixs2050/Documents/Mortal/artifacts/fixtures/logs/**/*.json.gz']
+file_index = '/home/drixs2050/Documents/Mortal/artifacts/tmp/step1_grp_dataset_index_cuda1.pth'
+file_batch_size = 2
+num_workers = 0
+pin_memory = false
+
+[grp.optim]
+lr = 1e-4
+
+[step1]
+fixture_log_dir = '/home/drixs2050/Documents/Mortal/artifacts/fixtures/logs'
+fixture_seed_start = 10000
+fixture_seed_key = 81985529216486895

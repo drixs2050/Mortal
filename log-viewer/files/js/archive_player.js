@@ -26,6 +26,8 @@ BAKAZE_TO_STR = {
   "N": "北"
 };
 
+SEAT_WIND_TO_STR = ["東", "南", "西", "北"];
+
 kyokus = [];
 
 currentKyokuId = 0;
@@ -178,7 +180,8 @@ loadAction = function(action) {
         actions: [],
         bakaze: action.bakaze,
         kyokuNum: action.kyoku,
-        honba: action.honba
+        honba: action.honba,
+        oya: action.oya
       };
       kyokus.push(kyoku);
       prevBoard = board;
@@ -406,6 +409,9 @@ renderAction = function(action) {
     infoView = Dytem.playerInfos.at(i);
     infoView.score.text(player.score);
     infoView.viewpoint.text(i === currentViewpoint ? "+" : "");
+    if (infoView.wind && kyoku && kyoku.oya != null) {
+      infoView.wind.text(SEAT_WIND_TO_STR[(i - kyoku.oya + 4) % 4]);
+    }
     if (!player.tehais) {
       renderPais([], view.tehais);
       view.tsumoPai.hide();

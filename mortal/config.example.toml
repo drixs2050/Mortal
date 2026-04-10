@@ -37,9 +37,12 @@ log_dir = '/path/to/test_play'
 [dataset]
 globs = ['/path/to/dataset/**/*.json.gz']
 file_index = '/path/to/file_index.pth'
+root_dir = ''
+file_list = ''
 file_batch_size = 15
 reserve_ratio = 0.0
 num_workers = 1
+pin_memory = true
 player_names_files = []
 num_epochs = 1
 enable_augmentation = false
@@ -50,8 +53,10 @@ gamma = 1
 pts = [6.0, 4.0, 2.0, 0.0]
 
 [resnet]
-conv_channels = 192
-num_blocks = 40
+conv_channels = 512
+num_blocks = 48
+bottleneck_channels = 64
+hidden_dim = 2048
 
 [cql]
 min_q_weight = 5
@@ -147,6 +152,7 @@ save_every = 2000
 val_steps = 400
 
 [grp.dataset]
+root_dir = ''
 train_globs = [
     '/path/to/dataset/2019/**/*.json.gz',
     '/path/to/dataset/2020/**/*.json.gz',
@@ -159,8 +165,225 @@ val_globs = [
     '/path/to/dataset/2021/11/**/*.json.gz',
     # ...
 ]
+train_list = ''
+val_list = ''
 file_index = '/path/to/grp_file_index.pth'
 file_batch_size = 50
+num_workers = 1
+pin_memory = true
 
 [grp.optim]
 lr = 1e-5
+
+[bc.control]
+version = 4
+device = 'cuda:0'
+seed = 0
+grad_accum_steps = 1
+max_runtime_seconds = 0
+enable_cudnn_benchmark = false
+enable_amp = false
+amp_dtype = 'bfloat16'
+enable_tf32 = true
+enable_compile = false
+freeze_bn = false
+tensorboard_dir = '/path/to/bc_log'
+state_file = '/path/to/bc_state.pth'
+best_state_file = '/path/to/bc_best.pth'
+full_eval_best_state_file = '/path/to/bc_full_eval_best.pth'
+checkpoint_dir = '/path/to/checkpoints'
+checkpoint_keep_recent = 10
+stage_save_dir = '/path/to/stage_saves'
+batch_size = 512
+train_log_every = 1
+save_every = 500
+val_steps = 190
+max_steps = 0
+top_k = 3
+val_batch_size = 0
+best_eval_split = 'val'
+best_eval_every = 2000
+best_eval_batch_size = 0
+best_eval_max_batches = 0
+eval_batch_size = 0
+eval_max_batches = 0
+metrics_jsonl = ''
+profiler_enabled = false
+profiler_wait_steps = 1
+profiler_warmup_steps = 4
+profiler_active_steps = 8
+profiler_repeat = 1
+profiler_record_shapes = true
+profiler_profile_memory = false
+profiler_with_stack = false
+profiler_output_dir = ''
+cpu_affinity_profile = 'none'
+worker_torch_num_threads = 1
+worker_omp_num_threads = 1
+
+[bc.dataset]
+root_dir = ''
+train_list = '/path/to/train.txt'
+val_list = '/path/to/val.txt'
+test_list = '/path/to/test.txt'
+path_cache = '/path/to/path_cache_v1.pth'
+actor_filter_index = '/path/to/bc_actor_filter_index.pth'
+step_count_summary = '/path/to/step_counts_v1.json'
+actor_filter_manifest = '/path/to/normalized_manifest.jsonl'
+min_actor_dan = 17
+train_globs = []
+val_globs = []
+test_globs = []
+file_index = '/path/to/bc_file_index.pth'
+file_batch_size = 20
+num_workers = 1
+eval_num_workers = 0
+prefetch_chunks = 0
+eval_prefetch_chunks = 0
+prefetch_strategy = 'static_chunks'
+prefetch_ram_budget_gib = 0
+eval_prefetch_ram_budget_gib = 0
+prefetch_target_chunk_gib = 0
+prefetch_low_watermark = 0.35
+prefetch_high_watermark = 0.85
+prefetch_threads = 1
+prebatched = false
+prebatch_layout = 'chunk'
+prebatch_shuffle_mode = 'sample'
+prebatch_spill_across_chunks = false
+prefetch_startup_file_batch_size = 0
+prefetch_out_of_order = false
+device_prefetch_batches = 2
+device_prefetch_startup_batches = 1
+eval_prefetch_startup_file_batch_size = 0
+eval_prefetch_out_of_order = false
+eval_device_prefetch_batches = 1
+eval_device_prefetch_startup_batches = 1
+eval_pin_memory = false
+handoff_pin_memory = false
+eval_handoff_pin_memory = false
+cpu_batch_pipe_backend = 'sync'
+cpu_ready_batches = 4
+cpu_ready_bytes_gib = 0
+cpu_pipe_poll_timeout_seconds = 0.1
+raw_source_backend = 'files'
+raw_pack_path = ''
+raw_pack_index_path = ''
+loader_mode = 'baseline'
+loader_block_target_samples = 65536
+loader_block_workers = 4
+loader_block_slots = 8
+loader_block_queue_timeout_s = 0.1
+multiprocessing_context = 'spawn'
+persistent_workers = false
+prefetch_factor = 2
+in_order = true
+pin_memory = true
+num_epochs = 1
+enable_augmentation = false
+augmented_first = false
+oracle = false
+trust_seed = false
+always_include_kan_select = true
+player_names_files = []
+exclude_names_files = []
+
+[bc.optim]
+lr = 1e-4
+eps = 1e-8
+betas = [0.9, 0.999]
+weight_decay = 0.1
+max_grad_norm = 0.0
+enable_fused_optimizer = true
+
+[bc.optim.scheduler]
+peak = 1e-4
+final = 1e-5
+warm_up_ratio = 0.05
+max_steps = 0
+init = 1e-6
+
+[bc.distributed]
+backend = 'nccl'
+broadcast_buffers = false
+find_unused_parameters = false
+gradient_as_bucket_view = true
+static_graph = false
+
+[bc.launch]
+nproc_per_node = 1
+master_port = 29500
+eval_device = 'cuda:0'
+final_val_json = '/path/to/final_val.json'
+final_test_json = '/path/to/final_test.json'
+campaign_summary_json = '/path/to/campaign_summary.json'
+
+[bc.stage]
+enabled = false
+backend = 'npy_shards'
+cache_root = 'artifacts/cache/bc_stage'
+format_version = 1
+target_shard_size_mib = 1024
+max_shard_size_mib = 2048
+max_stage_size_gib = 0
+preload_ram_budget_gib = 160
+preload_low_watermark = 0.65
+preload_high_watermark = 0.90
+preload_threads = 4
+reuse = 'if_valid'
+required_splits = ['train', 'val', 'test']
+allow_zarr = true
+
+[bc.runtime_cache]
+enabled = false
+mode = 'prepared_ram'
+node_ram_budget_gib = 160
+node_pinned_budget_gib = 8
+node_inflight_budget_gib = 8
+raw_lru_budget_gib = 0
+low_watermark = 0.65
+high_watermark = 0.85
+target_chunk_gib = 2
+max_chunk_gib = 4
+startup_ready_chunks = 2
+producer_threads = 1
+decode_threads = 4
+max_inflight_chunk_builders = 1
+min_files_per_chunk = 16
+max_files_per_chunk = 96
+eval_node_ram_budget_gib = 16
+eval_target_chunk_gib = 1
+eval_decode_threads = 2
+
+[bc.preflight]
+enabled = false
+min_runtime_seconds = 240
+required_stable_windows = 2
+stability_tolerance = 0.05
+summary_json = '/path/to/preflight_summary.json'
+gpu_sample_interval_seconds = 2.0
+min_samples_per_second = 5900
+preferred_samples_per_second = 7000
+max_loader_wait_fraction = 0.15
+min_steady_gpu_watts = 150
+min_steady_gpu_utilization = 60
+min_steady_gpu_ratio = 0.70
+max_combined_train_worker_rss_gib = 192
+max_single_train_worker_rss_gib = 112
+
+[bc.wandb]
+enabled = false
+project = 'mortal-step5-bc'
+entity = 'drixs2050'
+name = 'step5_bc'
+group = 'step5_bc'
+job_type = 'train'
+eval_job_type = 'eval'
+tags = ['step5', 'bc']
+notes = ''
+dir = '/path/to/wandb'
+mode = 'online'
+resume = 'allow'
+run_id = ''
+log_config = true
+log_eval_runs = true

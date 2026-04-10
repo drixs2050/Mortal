@@ -1,0 +1,107 @@
+# Benchmark: torch.compile=ON, bs=3072, 500 steps, single GPU
+
+[resnet]
+conv_channels = 512
+num_blocks = 48
+bottleneck_channels = 64
+hidden_dim = 2048
+
+[bc.control]
+version = 4
+device = 'cuda'
+seed = 60329
+grad_accum_steps = 1
+max_runtime_seconds = 0
+enable_cudnn_benchmark = true
+enable_amp = true
+amp_dtype = 'bfloat16'
+enable_tf32 = true
+enable_compile = true
+freeze_bn = false
+tensorboard_dir = ''
+state_file = '/home/drixs2050/Documents/Mortal/artifacts/checkpoints/bench_compile_bs3072_state.pth'
+best_state_file = '/home/drixs2050/Documents/Mortal/artifacts/checkpoints/bench_compile_bs3072_best.pth'
+batch_size = 3072
+train_log_every = 100
+save_every = 500
+val_steps = 2
+max_steps = 500
+top_k = 3
+val_batch_size = 3072
+best_eval_split = 'val'
+best_eval_every = 0
+best_eval_batch_size = 0
+best_eval_max_batches = 0
+eval_batch_size = 0
+eval_max_batches = 0
+
+[bc.dataset]
+root_dir = '/home/drixs2050/Documents/Mortal'
+train_list = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_4y_full_e01_e16_v0/phoenix_hanchan_9dan_actor_any/train.txt'
+val_list = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_4y_full_e01_e16_v0/phoenix_hanchan_9dan_actor_any/val.txt'
+test_list = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_4y_full_e01_e16_v0/phoenix_hanchan_9dan_actor_any/test.txt'
+path_cache = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_4y_full_e01_e16_v0/phoenix_hanchan_9dan_actor_any/path_cache_v1.pth'
+actor_filter_index = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_4y_full_e01_e16_v0/phoenix_hanchan_9dan_actor_any/actor_filter_min18.pth'
+step_count_summary = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_4y_full_e01_e16_v0/phoenix_hanchan_9dan_actor_any/step_counts_v1.json'
+actor_filter_manifest = '/home/drixs2050/Documents/Mortal/data/manifests/normalized/v1/tenhou_phoenix_4y_full_e01_e16_v0.jsonl'
+min_actor_dan = 18
+train_globs = []
+val_globs = []
+test_globs = []
+file_index = '/home/drixs2050/Documents/Mortal/artifacts/tmp/bench_compile_bs3072_file_index.pth'
+file_batch_size = 48
+num_workers = 4
+persistent_workers = true
+prefetch_factor = 2
+multiprocessing_context = 'spawn'
+pin_memory = true
+cpu_batch_pipe_backend = 'thread'
+cpu_ready_batches = 4
+device_prefetch_batches = 2
+num_epochs = 32
+enable_augmentation = false
+augmented_first = false
+oracle = false
+trust_seed = false
+always_include_kan_select = true
+player_names_files = []
+exclude_names_files = []
+
+[bc.optim]
+lr = 1e-4
+eps = 1e-8
+betas = [0.9, 0.999]
+weight_decay = 0.1
+max_grad_norm = 0.0
+enable_fused_optimizer = true
+
+[bc.optim.scheduler]
+peak = 4e-4
+final = 4e-5
+warm_up_ratio = 0.05
+max_steps = 0
+init = 1e-6
+
+[bc.distributed]
+backend = 'nccl'
+broadcast_buffers = false
+find_unused_parameters = false
+gradient_as_bucket_view = true
+static_graph = false
+
+[bc.launch]
+nproc_per_node = 1
+master_port = 29530
+eval_device = 'cuda:0'
+final_val_json = ''
+final_test_json = ''
+campaign_summary_json = ''
+
+[bc.stage]
+enabled = false
+
+[bc.runtime_cache]
+enabled = false
+
+[bc.wandb]
+enabled = false

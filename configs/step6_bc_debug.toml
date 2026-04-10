@@ -1,0 +1,110 @@
+# Step 6 debug behavior-cloning profile.
+# Fastest end-to-end sanity check on the stable Batch D split.
+
+[resnet]
+conv_channels = 64
+num_blocks = 4
+
+[bc.control]
+version = 4
+device = 'cuda:0'
+seed = 60329
+grad_accum_steps = 1
+max_runtime_seconds = 3600
+enable_cudnn_benchmark = false
+enable_amp = false
+amp_dtype = 'bfloat16'
+enable_tf32 = true
+enable_compile = false
+freeze_bn = false
+tensorboard_dir = '/home/drixs2050/Documents/Mortal/artifacts/tensorboard/step6_bc_debug'
+state_file = '/home/drixs2050/Documents/Mortal/artifacts/checkpoints/step6_bc_debug_state.pth'
+best_state_file = '/home/drixs2050/Documents/Mortal/artifacts/checkpoints/step6_bc_debug_best.pth'
+batch_size = 128
+train_log_every = 5
+save_every = 20
+val_steps = 10
+max_steps = 40
+top_k = 3
+val_batch_size = 512
+best_eval_split = 'val'
+best_eval_every = 20
+best_eval_batch_size = 512
+best_eval_max_batches = 10
+eval_batch_size = 512
+eval_max_batches = 0
+
+[bc.dataset]
+root_dir = '/home/drixs2050/Documents/Mortal'
+train_list = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_batch_d_v0/phoenix_hanchan_8dan_actor_any/train.txt'
+val_list = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_batch_d_v0/phoenix_hanchan_8dan_actor_any/val.txt'
+test_list = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_batch_d_v0/phoenix_hanchan_8dan_actor_any/test.txt'
+path_cache = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_batch_d_v0/phoenix_hanchan_8dan_actor_any/path_cache_v1.pth'
+actor_filter_index = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_batch_d_v0/phoenix_hanchan_8dan_actor_any/actor_filter_min17.pth'
+step_count_summary = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_batch_d_v0/phoenix_hanchan_8dan_actor_any/step_counts_v1.json'
+actor_filter_manifest = '/home/drixs2050/Documents/Mortal/data/manifests/normalized/v1/tenhou_phoenix_batch_d_v0.jsonl'
+min_actor_dan = 17
+train_globs = []
+val_globs = []
+test_globs = []
+file_index = '/home/drixs2050/Documents/Mortal/artifacts/tmp/step6_bc_debug_file_index.pth'
+file_batch_size = 4
+num_workers = 0
+eval_num_workers = 0
+eval_pin_memory = false
+multiprocessing_context = 'spawn'
+pin_memory = false
+num_epochs = 1
+enable_augmentation = false
+augmented_first = false
+oracle = false
+trust_seed = false
+always_include_kan_select = true
+player_names_files = []
+exclude_names_files = []
+
+[bc.optim]
+lr = 1e-4
+eps = 1e-8
+betas = [0.9, 0.999]
+weight_decay = 0.1
+max_grad_norm = 0.0
+
+[bc.optim.scheduler]
+peak = 4e-4
+final = 4e-5
+warm_up_ratio = 0.05
+max_steps = 0
+init = 1e-6
+
+[bc.distributed]
+backend = 'nccl'
+broadcast_buffers = false
+find_unused_parameters = false
+gradient_as_bucket_view = true
+static_graph = false
+
+[bc.launch]
+nproc_per_node = 1
+master_port = 29511
+eval_device = 'cuda:0'
+final_val_json = '/home/drixs2050/Documents/Mortal/artifacts/reports/step6_bc_debug_val.json'
+final_test_json = '/home/drixs2050/Documents/Mortal/artifacts/reports/step6_bc_debug_test.json'
+campaign_summary_json = '/home/drixs2050/Documents/Mortal/artifacts/reports/step6_bc_debug_campaign.json'
+
+[bc.wandb]
+enabled = true
+project = 'mortal-step6-bc'
+entity = 'drixs2050'
+name = 'step6_bc_debug'
+group = 'step6_bc'
+job_type = 'train'
+eval_job_type = 'eval'
+tags = ['step6', 'bc', 'debug']
+notes = ''
+dir = '/home/drixs2050/Documents/Mortal/artifacts/wandb'
+mode = 'online'
+resume = 'allow'
+run_id = ''
+log_config = true
+log_eval_runs = true

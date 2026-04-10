@@ -8,12 +8,13 @@ from itertools import permutations
 from libriichi.consts import obs_shape, oracle_obs_shape, ACTION_SPACE, GRP_SIZE
 
 class ChannelAttention(nn.Module):
-    def __init__(self, channels, ratio=16, actv_builder=nn.ReLU, bias=True):
+    def __init__(self, channels, ratio=16, actv_builder=nn.ReLU, bias=True, attention_ratio=None):
         super().__init__()
+        r = attention_ratio if attention_ratio is not None else ratio
         self.shared_mlp = nn.Sequential(
-            nn.Linear(channels, channels // ratio, bias=bias),
+            nn.Linear(channels, channels // r, bias=bias),
             actv_builder(),
-            nn.Linear(channels // ratio, channels, bias=bias),
+            nn.Linear(channels // r, channels, bias=bias),
         )
         if bias:
             for mod in self.modules():
@@ -35,6 +36,7 @@ class ResBlock(nn.Module):
         norm_builder = nn.Identity,
         actv_builder = nn.ReLU,
         pre_actv = False,
+        attention_ratio = 16,
     ):
         super().__init__()
         self.pre_actv = pre_actv
@@ -57,7 +59,7 @@ class ResBlock(nn.Module):
                 norm_builder(),
             )
             self.actv = actv_builder()
-        self.ca = ChannelAttention(channels, actv_builder=actv_builder, bias=True)
+        self.ca = ChannelAttention(channels, actv_builder=actv_builder, bias=True, attention_ratio=attention_ratio)
 
     def forward(self, x):
         out = self.res_unit(x)
@@ -77,8 +79,12 @@ class ResNet(nn.Module):
         norm_builder = nn.Identity,
         actv_builder = nn.ReLU,
         pre_actv = False,
+        bottleneck_channels = 32,
+        hidden_dim = 1024,
+        attention_ratio = 16,
     ):
         super().__init__()
+        spatial_dim = 34  # from game state encoding
 
         blocks = []
         for _ in range(num_blocks):
@@ -87,6 +93,7 @@ class ResNet(nn.Module):
                 norm_builder = norm_builder,
                 actv_builder = actv_builder,
                 pre_actv = pre_actv,
+                attention_ratio = attention_ratio,
             ))
 
         layers = [nn.Conv1d(in_channels, conv_channels, kernel_size=3, padding=1, bias=False)]
@@ -95,10 +102,10 @@ class ResNet(nn.Module):
         else:
             layers += [norm_builder(), actv_builder(), *blocks]
         layers += [
-            nn.Conv1d(conv_channels, 32, kernel_size=3, padding=1),
+            nn.Conv1d(conv_channels, bottleneck_channels, kernel_size=3, padding=1),
             actv_builder(),
             nn.Flatten(),
-            nn.Linear(32 * 34, 1024),
+            nn.Linear(bottleneck_channels * spatial_dim, hidden_dim),
         ]
         self.net = nn.Sequential(*layers)
 
@@ -106,10 +113,12 @@ class ResNet(nn.Module):
         return self.net(x)
 
 class Brain(nn.Module):
-    def __init__(self, *, conv_channels, num_blocks, is_oracle=False, version=1):
+    def __init__(self, *, conv_channels, num_blocks, is_oracle=False, version=1,
+                 bottleneck_channels=32, hidden_dim=1024, attention_ratio=16):
         super().__init__()
         self.is_oracle = is_oracle
         self.version = version
+        self.hidden_dim = hidden_dim
 
         in_channels = obs_shape(version)[0]
         if is_oracle:
@@ -124,7 +133,7 @@ class Brain(nn.Module):
                 actv_builder = partial(nn.ReLU, inplace=True)
                 pre_actv = False
                 self.latent_net = nn.Sequential(
-                    nn.Linear(1024, 512),
+                    nn.Linear(hidden_dim, 512),
                     nn.ReLU(inplace=True),
                 )
                 self.mu_head = nn.Linear(512, 512)
@@ -143,6 +152,9 @@ class Brain(nn.Module):
             norm_builder = norm_builder,
             actv_builder = actv_builder,
             pre_actv = pre_actv,
+            bottleneck_channels = bottleneck_channels,
+            hidden_dim = hidden_dim,
+            attention_ratio = attention_ratio,
         )
         self.actv = actv_builder()
 
@@ -186,44 +198,50 @@ class Brain(nn.Module):
         return self.train(self.training)
 
 class AuxNet(nn.Module):
-    def __init__(self, dims=None):
+    def __init__(self, dims=None, hidden_dim=1024):
         super().__init__()
         self.dims = dims
-        self.net = nn.Linear(1024, sum(dims), bias=False)
+        self.net = nn.Linear(hidden_dim, sum(dims), bias=False)
 
     def forward(self, x):
         return self.net(x).split(self.dims, dim=-1)
 
 class DQN(nn.Module):
-    def __init__(self, *, version=1):
+    def __init__(self, *, version=1, hidden_dim=1024):
         super().__init__()
         self.version = version
         match version:
             case 1:
+                # v1 uses 512-dim latent from Brain's latent_net
                 self.v_head = nn.Linear(512, 1)
                 self.a_head = nn.Linear(512, ACTION_SPACE)
             case 2 | 3:
                 hidden_size = 512 if version == 2 else 256
                 self.v_head = nn.Sequential(
-                    nn.Linear(1024, hidden_size),
+                    nn.Linear(hidden_dim, hidden_size),
                     nn.Mish(inplace=True),
                     nn.Linear(hidden_size, 1),
                 )
                 self.a_head = nn.Sequential(
-                    nn.Linear(1024, hidden_size),
+                    nn.Linear(hidden_dim, hidden_size),
                     nn.Mish(inplace=True),
                     nn.Linear(hidden_size, ACTION_SPACE),
                 )
             case 4:
-                self.net = nn.Linear(1024, 1 + ACTION_SPACE)
+                self.net = nn.Linear(hidden_dim, 1 + ACTION_SPACE)
                 nn.init.constant_(self.net.bias, 0)
 
-    def forward(self, phi, mask):
+    def _split_logits(self, phi):
         if self.version == 4:
-            v, a = self.net(phi).split((1, ACTION_SPACE), dim=-1)
-        else:
-            v = self.v_head(phi)
-            a = self.a_head(phi)
+            return self.net(phi).split((1, ACTION_SPACE), dim=-1)
+        return self.v_head(phi), self.a_head(phi)
+
+    def action_logits(self, phi):
+        _, a = self._split_logits(phi)
+        return a
+
+    def forward(self, phi, mask):
+        v, a = self._split_logits(phi)
         a_sum = a.masked_fill(~mask, 0.).sum(-1, keepdim=True)
         mask_sum = mask.sum(-1, keepdim=True)
         a_mean = a_sum / mask_sum

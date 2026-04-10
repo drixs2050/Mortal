@@ -1,0 +1,83 @@
+# Step 5 preview behavior-cloning profile.
+# This is a short real-data run meant to finish in a few minutes so we can
+# verify startup, training, evaluation, checkpointing, TensorBoard, and WandB.
+
+[resnet]
+conv_channels = 192
+num_blocks = 40
+
+[bc.control]
+version = 4
+device = 'cuda:0'
+enable_cudnn_benchmark = true
+enable_amp = true
+amp_dtype = 'bfloat16'
+enable_tf32 = true
+enable_compile = false
+freeze_bn = false
+tensorboard_dir = '/home/drixs2050/Documents/Mortal/artifacts/tensorboard/step5_bc_preview'
+state_file = '/home/drixs2050/Documents/Mortal/artifacts/checkpoints/step5_bc_preview_state.pth'
+best_state_file = '/home/drixs2050/Documents/Mortal/artifacts/checkpoints/step5_bc_preview_best.pth'
+batch_size = 2048
+train_log_every = 1
+save_every = 2
+val_steps = 1
+max_steps = 8
+top_k = 3
+best_eval_split = 'val'
+best_eval_every = 2
+best_eval_batch_size = 0
+best_eval_max_batches = 1
+
+[bc.dataset]
+root_dir = '/home/drixs2050/Documents/Mortal'
+train_list = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_4y_partial_e01_e09_v0/phoenix_hanchan_8dan_actor_any/train.txt'
+val_list = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_4y_partial_e01_e09_v0/phoenix_hanchan_8dan_actor_any/val.txt'
+test_list = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_4y_partial_e01_e09_v0/phoenix_hanchan_8dan_actor_any/test.txt'
+path_cache = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_4y_partial_e01_e09_v0/phoenix_hanchan_8dan_actor_any/path_cache_v1.pth'
+actor_filter_index = '/home/drixs2050/Documents/Mortal/data/splits/v1/tenhou_phoenix_4y_partial_e01_e09_v0/phoenix_hanchan_8dan_actor_any/actor_filter_min17.pth'
+actor_filter_manifest = '/home/drixs2050/Documents/Mortal/data/manifests/normalized/v1/tenhou_phoenix_4y_partial_e01_e09_v0.jsonl'
+min_actor_dan = 17
+train_globs = []
+val_globs = []
+test_globs = []
+file_index = '/home/drixs2050/Documents/Mortal/artifacts/tmp/step5_bc_preview_file_index.pth'
+file_batch_size = 12
+num_workers = 4
+eval_num_workers = 0
+eval_pin_memory = false
+multiprocessing_context = 'spawn'
+pin_memory = true
+num_epochs = 1
+enable_augmentation = false
+augmented_first = false
+oracle = false
+trust_seed = false
+always_include_kan_select = true
+player_names_files = []
+exclude_names_files = []
+
+[bc.optim]
+lr = 1e-4
+eps = 1e-8
+betas = [0.9, 0.999]
+weight_decay = 0.1
+max_grad_norm = 0.0
+enable_fused_optimizer = true
+
+[bc.wandb]
+enabled = true
+project = 'mortal-step5-bc'
+entity = 'drixs2050'
+name = 'step5_bc_preview'
+group = 'step5_bc'
+job_type = 'train'
+eval_job_type = 'eval'
+tags = ['step5', 'bc', 'preview']
+notes = ''
+dir = '/home/drixs2050/Documents/Mortal/artifacts/wandb'
+mode = 'online'
+resume = 'allow'
+run_id = ''
+log_config = true
+log_eval_runs = true
