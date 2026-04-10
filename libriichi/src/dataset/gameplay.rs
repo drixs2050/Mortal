@@ -134,6 +134,11 @@ impl GameplayLoader {
         self.load_gz_log_files(gzip_filenames)
     }
 
+    #[pyo3(name = "load_gz_log_blobs")]
+    fn load_gz_log_blobs_py(&self, gzip_blobs: Vec<Vec<u8>>) -> Result<Vec<Vec<Gameplay>>> {
+        self.load_gz_log_blobs(gzip_blobs)
+    }
+
     fn __repr__(&self) -> String {
         format!("{self:?}")
     }
@@ -156,6 +161,24 @@ impl GameplayLoader {
                     self.load_log(&raw)
                 };
                 inner().with_context(|| format!("error when reading {filename}"))
+            })
+            .collect()
+    }
+
+    pub fn load_gz_log_blobs<V, B>(&self, gzip_blobs: V) -> Result<Vec<Vec<Gameplay>>>
+    where
+        V: IntoParallelIterator<Item = B>,
+        B: AsRef<[u8]>,
+    {
+        gzip_blobs
+            .into_par_iter()
+            .map(|blob| {
+                let inner = || {
+                    let gz = GzDecoder::new(blob.as_ref());
+                    let raw = io::read_to_string(gz)?;
+                    self.load_log(&raw)
+                };
+                inner().context("error when reading gzip blob")
             })
             .collect()
     }

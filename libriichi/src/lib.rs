@@ -95,7 +95,7 @@
 mod arena;
 mod array;
 mod consts;
-mod dataset;
+pub mod dataset;
 mod macros;
 mod py_helper;
 mod rankings;
